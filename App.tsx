@@ -171,6 +171,8 @@ const KutuApp: React.FC = () => {
     const [editingGroup, setEditingGroup] = useState<Group | null>(null);
     const [financialTip, setFinancialTip] = useState<string>('');
     const [tipLoading, setTipLoading] = useState<boolean>(true);
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
     const { showToast } = useNotification();
 
     useEffect(() => {
@@ -226,11 +228,20 @@ const KutuApp: React.FC = () => {
         showToast('Group updated successfully!', 'success');
     };
 
-    const handleDeleteGroup = (groupId: string) => {
-        if (window.confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
-            setGroups(groups.filter(g => g.id !== groupId));
-            setSelectedGroup(null);
+    const requestDeleteGroup = (groupId: string) => {
+        setGroupToDelete(groupId);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (groupToDelete) {
+            setGroups(groups.filter(g => g.id !== groupToDelete));
+            if (selectedGroup?.id === groupToDelete) {
+                setSelectedGroup(null);
+            }
             showToast('Group deleted successfully.', 'info');
+            setDeleteModalOpen(false);
+            setGroupToDelete(null);
         }
     };
 
@@ -362,7 +373,7 @@ const KutuApp: React.FC = () => {
                         group={selectedGroup}
                         onBack={() => setSelectedGroup(null)}
                         onUpdateGroup={handleUpdateGroup}
-                        onDeleteGroup={handleDeleteGroup}
+                        onDeleteGroup={requestDeleteGroup}
                         onStartNextRound={handleStartNextRound}
                         onMarkPayoutComplete={handleMarkPayoutComplete}
                         onMarkAsPaid={handleMarkAsPaid}
@@ -370,7 +381,7 @@ const KutuApp: React.FC = () => {
                 ) : (
                     <>
                         <FinancialTipCard tip={financialTip} loading={tipLoading} onRefresh={fetchTip} />
-                        <GroupList groups={groups} onSelectGroup={handleSelectGroup} onEditGroup={openEditModal} onDeleteGroup={handleDeleteGroup}/>
+                        <GroupList groups={groups} onSelectGroup={handleSelectGroup} onEditGroup={openEditModal} onDeleteGroup={requestDeleteGroup}/>
                     </>
                 )}
             </main>
@@ -381,6 +392,27 @@ const KutuApp: React.FC = () => {
                 onUpdateGroup={handleUpdateGroup}
                 existingGroup={editingGroup}
             />
+            <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirm Deletion">
+                <div className="text-center">
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        Are you sure you want to delete this group? This action cannot be undone.
+                    </p>
+                    <div className="flex justify-center gap-4">
+                        <button
+                            onClick={() => setDeleteModalOpen(false)}
+                            className="px-6 py-2 bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmDelete}
+                            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
@@ -486,7 +518,7 @@ interface GroupDetailProps {
     onMarkAsPaid: (groupId: string, roundNumber: number, memberId: string) => void;
 }
 
-const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onStartNextRound, onMarkPayoutComplete, onMarkAsPaid }) => {
+const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onDeleteGroup, onStartNextRound, onMarkPayoutComplete, onMarkAsPaid }) => {
     const currentRound = group.rounds.find(r => r.roundNumber === group.currentRound);
     
     if (!currentRound) {
@@ -559,6 +591,14 @@ const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onStartNextRou
                         <button onClick={printReport} className="flex items-center bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
                             <PrinterIcon className="w-5 h-5 mr-2"/>
                             Print
+                        </button>
+                        <button 
+                            onClick={() => onDeleteGroup(group.id)} 
+                            className="flex items-center bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 px-4 py-2 rounded-lg font-semibold hover:bg-red-200 dark:hover:bg-red-900/80 transition-colors"
+                            aria-label="Delete group"
+                        >
+                            <TrashIcon className="w-5 h-5 mr-2"/>
+                            Delete
                         </button>
                     </div>
                 </div>
