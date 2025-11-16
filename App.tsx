@@ -167,6 +167,7 @@ const KutuApp: React.FC = () => {
         }
     });
     const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+    const [view, setView] = useState<'list' | 'detail' | 'settings'>('list');
     const [isGroupModalOpen, setGroupModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<Group | null>(null);
     const [financialTip, setFinancialTip] = useState<string>('');
@@ -174,6 +175,31 @@ const KutuApp: React.FC = () => {
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
     const { showToast } = useNotification();
+    const [theme, setTheme] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('theme') || 'system';
+        }
+        return 'system';
+    });
+
+     useEffect(() => {
+        const applyTheme = (t: string) => {
+            if (t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        };
+
+        applyTheme(theme);
+        localStorage.setItem('theme', theme);
+        
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => applyTheme(theme);
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, [theme]);
+
 
     useEffect(() => {
         try {
@@ -201,6 +227,7 @@ const KutuApp: React.FC = () => {
 
     const handleSelectGroup = (group: Group) => {
         setSelectedGroup(group);
+        setView('detail');
     };
     
     const handleAddGroup = (group: Omit<Group, 'id' | 'rounds' | 'currentRound' | 'status'>) => {
@@ -238,6 +265,7 @@ const KutuApp: React.FC = () => {
             setGroups(groups.filter(g => g.id !== groupToDelete));
             if (selectedGroup?.id === groupToDelete) {
                 setSelectedGroup(null);
+                setView('list');
             }
             showToast('Group deleted successfully.', 'info');
             setDeleteModalOpen(false);
@@ -281,7 +309,6 @@ const KutuApp: React.FC = () => {
                     rounds: [...group.rounds, newRound]
                 };
                 
-                // Also update selectedGroup if it's the one being modified
                 if (selectedGroup?.id === groupId) {
                     setSelectedGroup(updatedGroup);
                 }
@@ -329,7 +356,6 @@ const KutuApp: React.FC = () => {
                     });
                     const updatedGroup = { ...group, rounds: updatedRounds };
     
-                    // Update selectedGroup if it's the one being modified
                     setSelectedGroup(currentSelectedGroup => 
                         currentSelectedGroup?.id === groupId ? updatedGroup : currentSelectedGroup
                     );
@@ -357,32 +383,52 @@ const KutuApp: React.FC = () => {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <header className="bg-white dark:bg-gray-800 shadow-md">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">KutuPro Loan Manager</h1>
-                    <button 
-                        onClick={openAddModal}
-                        className="flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-                    >
-                        <PlusIcon className="w-5 h-5 mr-2"/>
-                        New Group
-                    </button>
+                    <div className="font-title text-3xl font-bold uppercase tracking-wider text-orange-500 dark:text-orange-400">
+                        <span>KUTUPRO </span>
+                        <span className="font-manager">LOAN MANAGER</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button 
+                            onClick={openAddModal}
+                            className="flex items-center justify-center bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
+                        >
+                            <PlusIcon className="w-5 h-5 mr-2"/>
+                            New Group
+                        </button>
+                         <button
+                            onClick={() => setView('settings')}
+                            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="Settings"
+                        >
+                            <SettingsIcon className="w-6 h-6" />
+                        </button>
+                    </div>
                 </div>
             </header>
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {selectedGroup ? (
+                 {view === 'list' && (
+                    <>
+                        <FinancialTipCard tip={financialTip} loading={tipLoading} onRefresh={fetchTip} />
+                        <GroupList groups={groups} onSelectGroup={handleSelectGroup} onEditGroup={openEditModal} onDeleteGroup={requestDeleteGroup}/>
+                    </>
+                )}
+                {view === 'detail' && selectedGroup && (
                     <GroupDetail
                         group={selectedGroup}
-                        onBack={() => setSelectedGroup(null)}
+                        onBack={() => { setSelectedGroup(null); setView('list'); }}
                         onUpdateGroup={handleUpdateGroup}
                         onDeleteGroup={requestDeleteGroup}
                         onStartNextRound={handleStartNextRound}
                         onMarkPayoutComplete={handleMarkPayoutComplete}
                         onMarkAsPaid={handleMarkAsPaid}
                     />
-                ) : (
-                    <>
-                        <FinancialTipCard tip={financialTip} loading={tipLoading} onRefresh={fetchTip} />
-                        <GroupList groups={groups} onSelectGroup={handleSelectGroup} onEditGroup={openEditModal} onDeleteGroup={requestDeleteGroup}/>
-                    </>
+                )}
+                {view === 'settings' && (
+                    <SettingsPage 
+                        onBack={() => setView('list')}
+                        currentTheme={theme}
+                        onThemeChange={setTheme}
+                    />
                 )}
             </main>
              <GroupForm
@@ -798,6 +844,48 @@ const GroupForm: React.FC<GroupFormProps> = ({ isOpen, onClose, onAddGroup, onUp
                 </div>
             </form>
         </Modal>
+    );
+};
+
+// --- SETTINGS PAGE ---
+interface SettingsPageProps {
+    onBack: () => void;
+    currentTheme: string;
+    onThemeChange: (theme: string) => void;
+}
+
+const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, currentTheme, onThemeChange }) => {
+    return (
+        <div>
+            <button onClick={onBack} className="flex items-center text-indigo-600 dark:text-indigo-400 font-semibold mb-6 hover:underline">
+                <ArrowLeftIcon className="w-5 h-5 mr-2" />
+                Back to All Groups
+            </button>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mt-6 max-w-2xl mx-auto">
+                <h2 className="text-3xl font-extrabold text-gray-800 dark:text-white mb-8">Settings</h2>
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Appearance</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Choose how the app looks. Select a theme below.</p>
+                        <div className="flex space-x-2 rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
+                            {['light', 'dark', 'system'].map((themeOption) => (
+                                <button
+                                    key={themeOption}
+                                    onClick={() => onThemeChange(themeOption)}
+                                    className={`w-full capitalize px-3 py-1.5 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 ${
+                                        currentTheme === themeOption
+                                            ? 'bg-white dark:bg-gray-900/70 text-indigo-600 dark:text-indigo-400 shadow'
+                                            : 'text-gray-500 hover:bg-white/60 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-900/30'
+                                    }`}
+                                >
+                                    {themeOption}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
