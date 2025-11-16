@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { Group, Member, Round } from './types';
 import { getFinancialTip } from './services/geminiService';
-import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon } from './components/icons';
+import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon } from './components/icons';
 
 
 // --- NOTIFICATION SYSTEM ---
@@ -565,11 +565,22 @@ interface GroupDetailProps {
 }
 
 const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onDeleteGroup, onStartNextRound, onMarkPayoutComplete, onMarkAsPaid }) => {
+    const [searchTerm, setSearchTerm] = useState('');
     const currentRound = group.rounds.find(r => r.roundNumber === group.currentRound);
     
     if (!currentRound) {
         return <div className="text-center p-8">Error: Current round data not found.</div>;
     }
+
+    const filteredPayments = useMemo(() => {
+        if (!searchTerm) {
+            return currentRound.payments;
+        }
+        return currentRound.payments.filter(payment => {
+            const member = group.members.find(m => m.id === payment.memberId);
+            return member?.name.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+    }, [searchTerm, currentRound.payments, group.members]);
 
     const payoutMemberForCurrentRound = group.members.find(m => m.id === group.payoutOrder[group.currentRound - 1]);
     const totalCollected = currentRound.payments.filter(p => p.status === 'Paid').length * group.contributionAmount;
@@ -664,69 +675,124 @@ const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onDeleteGroup,
                     </div>
                 </div>
 
-                <div>
-                    <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">Round {currentRound.roundNumber} Payments</h3>
-                    
-                    <ul className="space-y-3">
-                        {currentRound.payments.map(payment => {
-                            const member = group.members.find(m => m.id === payment.memberId);
-                            if (!member) return null;
+                <div className="grid md:grid-cols-2 gap-x-8">
+                    <div>
+                        <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">Round {currentRound.roundNumber} Payments</h3>
+                        
+                        <div className="relative mb-4">
+                            <input
+                                type="text"
+                                placeholder="Search member to mark payment..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm"
+                            />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="w-5 h-5 text-gray-400" />
+                            </div>
+                        </div>
 
-                            return (
-                                <li key={payment.memberId} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <div className="flex flex-col">
-                                        <span className="font-medium text-gray-800 dark:text-gray-200">{member.name}</span>
-                                        {member.phone && <span className="text-xs text-gray-500 dark:text-gray-400">{member.phone}</span>}
-                                    </div>
-                                    {payment.status === 'Paid' ? (
-                                        <span className="flex items-center text-sm font-semibold text-green-600 dark:text-green-400">
-                                            <CheckCircleIcon className="w-5 h-5 mr-1.5" />
-                                            Paid
-                                        </span>
-                                    ) : (
-                                        <div className="flex items-center gap-4">
-                                            <span className="flex items-center text-sm font-semibold text-red-600 dark:text-red-400">
-                                                <XCircleIcon className="w-5 h-5 mr-1.5" />
-                                                Unpaid
-                                            </span>
-                                            <button
-                                                onClick={() => onMarkAsPaid(group.id, currentRound.roundNumber, payment.memberId)}
-                                                className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 disabled:bg-gray-400"
-                                                aria-label={`Mark payment for ${member.name} as paid`}
-                                                disabled={group.status === 'Completed' || currentRound.payoutCompleted}
-                                            >
-                                                Mark Paid
-                                            </button>
-                                        </div>
-                                    )}
+                        <ul className="space-y-3">
+                             {filteredPayments.length > 0 ? (
+                                filteredPayments.map(payment => {
+                                    const member = group.members.find(m => m.id === payment.memberId);
+                                    if (!member) return null;
+
+                                    return (
+                                        <li key={payment.memberId} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-gray-800 dark:text-gray-200">{member.name}</span>
+                                                {member.phone && <span className="text-xs text-gray-500 dark:text-gray-400">{member.phone}</span>}
+                                            </div>
+                                            {payment.status === 'Paid' ? (
+                                                <span className="flex items-center text-sm font-semibold text-green-600 dark:text-green-400">
+                                                    <CheckCircleIcon className="w-5 h-5 mr-1.5" />
+                                                    Paid
+                                                </span>
+                                            ) : (
+                                                <div className="flex items-center gap-4">
+                                                    <span className="flex items-center text-sm font-semibold text-red-600 dark:text-red-400">
+                                                        <XCircleIcon className="w-5 h-5 mr-1.5" />
+                                                        Unpaid
+                                                    </span>
+                                                    <button
+                                                        onClick={() => onMarkAsPaid(group.id, currentRound.roundNumber, payment.memberId)}
+                                                        className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 disabled:bg-gray-400"
+                                                        aria-label={`Mark payment for ${member.name} as paid`}
+                                                        disabled={group.status === 'Completed' || currentRound.payoutCompleted}
+                                                    >
+                                                        Mark Paid
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </li>
+                                    );
+                                })
+                            ) : (
+                                <li className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                    No members found matching your search.
                                 </li>
-                            );
-                        })}
-                    </ul>
-                    
-                    <div className="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row items-center justify-end gap-4">
-                        {!currentRound.payoutCompleted ? (
-                            <button
-                                onClick={() => onMarkPayoutComplete(group.id, currentRound.roundNumber)}
-                                disabled={!allPaidForCurrentRound}
-                                className="w-full sm:w-auto flex-shrink-0 px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-                            >
-                                Mark Payout as Complete
-                            </button>
-                        ) : (
-                            group.status !== 'Completed' && (
-                                <button
-                                     onClick={() => onStartNextRound(group.id)}
-                                    className="w-full sm:w-auto flex-shrink-0 px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-                                >
-                                    Start Next Round
-                                </button>
-                            )
-                        )}
-                         {group.status === 'Completed' && (
-                            <p className="text-lg font-semibold text-green-600 dark:text-green-400">This group cycle is complete!</p>
-                        )}
+                            )}
+                        </ul>
                     </div>
+
+                    <div>
+                        <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">Payout Order</h3>
+                        <ol className="space-y-2">
+                            {group.payoutOrder.map((memberId, index) => {
+                                const member = group.members.find(m => m.id === memberId);
+                                if (!member) return null;
+
+                                const isPast = index < group.currentRound - 1;
+                                const isCurrent = index === group.currentRound - 1;
+                                
+                                let statusStyles = 'bg-gray-50 dark:bg-gray-700/50';
+                                let statusBadge = <span className="text-xs font-medium text-gray-500 dark:text-gray-400">UPCOMING</span>;
+
+                                if (isPast) {
+                                    statusStyles = 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 opacity-80';
+                                    statusBadge = <span className="flex items-center text-xs font-medium"><CheckCircleIcon className="w-4 h-4 mr-1.5 text-green-500"/> PAID OUT</span>;
+                                } else if (isCurrent) {
+                                    statusStyles = 'bg-yellow-100 dark:bg-yellow-800/40 font-semibold ring-2 ring-yellow-500/50';
+                                    statusBadge = <span className="text-xs font-bold text-yellow-800 dark:text-yellow-200">CURRENT RECIPIENT</span>;
+                                }
+                                
+                                return (
+                                    <li key={memberId} className={`flex items-center justify-between p-3 rounded-lg transition-all ${statusStyles}`}>
+                                        <span className="flex items-center">
+                                            <span className="font-mono text-sm text-gray-400 dark:text-gray-500 w-6 text-center mr-3">{index + 1}.</span>
+                                            {member.name}
+                                        </span>
+                                        {statusBadge}
+                                    </li>
+                                );
+                            })}
+                        </ol>
+                    </div>
+                </div>
+                
+                <div className="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row items-center justify-end gap-4">
+                    {!currentRound.payoutCompleted ? (
+                        <button
+                            onClick={() => onMarkPayoutComplete(group.id, currentRound.roundNumber)}
+                            disabled={!allPaidForCurrentRound}
+                            className="w-full sm:w-auto flex-shrink-0 px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                        >
+                            Mark Payout as Complete
+                        </button>
+                    ) : (
+                        group.status !== 'Completed' && (
+                            <button
+                                    onClick={() => onStartNextRound(group.id)}
+                                className="w-full sm:w-auto flex-shrink-0 px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
+                            >
+                                Start Next Round
+                            </button>
+                        )
+                    )}
+                        {group.status === 'Completed' && (
+                        <p className="text-lg font-semibold text-green-600 dark:text-green-400">This group cycle is complete!</p>
+                    )}
                 </div>
             </div>
         </div>
@@ -748,27 +814,24 @@ const GroupForm: React.FC<GroupFormProps> = ({ isOpen, onClose, onAddGroup, onUp
     const [contributionAmount, setContributionAmount] = useState(100);
     const [members, setMembers] = useState<Member[]>([{ id: `mem${Date.now()}`, name: '', phone: '' }]);
     const [payoutOrder, setPayoutOrder] = useState<string[]>([]);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     
     useEffect(() => {
-        if (existingGroup) {
-            setName(existingGroup.name);
-            setContributionAmount(existingGroup.contributionAmount);
-            setMembers(existingGroup.members);
-            setPayoutOrder(existingGroup.payoutOrder);
-        } else {
-            setName('');
-            setContributionAmount(100);
-            setMembers([{ id: `mem${Date.now()}`, name: '', phone: '' }]);
-            setPayoutOrder([]);
+        if (isOpen) {
+            if (existingGroup) {
+                setName(existingGroup.name);
+                setContributionAmount(existingGroup.contributionAmount);
+                setMembers(existingGroup.members);
+                setPayoutOrder(existingGroup.payoutOrder);
+            } else {
+                const initialMember = { id: `mem${Date.now()}`, name: '', phone: '' };
+                setName('');
+                setContributionAmount(100);
+                setMembers([initialMember]);
+                setPayoutOrder([initialMember.id]);
+            }
         }
     }, [existingGroup, isOpen]);
-    
-    useEffect(() => {
-        // Auto-generate payout order when members change
-        const memberIds = members.map(m => m.id);
-        const shuffledOrder = [...memberIds].sort(() => Math.random() - 0.5);
-        setPayoutOrder(shuffledOrder);
-    }, [members.length]);
 
     const handleMemberChange = (index: number, field: keyof Member, value: string) => {
         const newMembers = [...members];
@@ -777,13 +840,34 @@ const GroupForm: React.FC<GroupFormProps> = ({ isOpen, onClose, onAddGroup, onUp
     };
 
     const addMember = () => {
-        setMembers([...members, { id: `mem${Date.now()}`, name: '', phone: '' }]);
+        const newMember = { id: `mem${Date.now()}`, name: '', phone: '' };
+        setMembers([...members, newMember]);
+        setPayoutOrder([...payoutOrder, newMember.id]);
     };
 
     const removeMember = (index: number) => {
         const memberIdToRemove = members[index].id;
         setMembers(members.filter((_, i) => i !== index));
         setPayoutOrder(payoutOrder.filter(id => id !== memberIdToRemove));
+    };
+
+    const handleDragStart = (index: number) => {
+        setDraggedIndex(index);
+    };
+    
+    const handleDragEnter = (index: number) => {
+        if (draggedIndex === null || draggedIndex === index) return;
+        
+        const newOrder = [...payoutOrder];
+        const [draggedItem] = newOrder.splice(draggedIndex, 1);
+        newOrder.splice(index, 0, draggedItem);
+        
+        setPayoutOrder(newOrder);
+        setDraggedIndex(index);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -822,11 +906,11 @@ const GroupForm: React.FC<GroupFormProps> = ({ isOpen, onClose, onAddGroup, onUp
                 </div>
                 <div>
                     <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">Members</h3>
-                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                    <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
                         {members.map((member, index) => (
                             <div key={member.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-md">
                                 <span className="text-gray-500 dark:text-gray-400 font-semibold">{index + 1}.</span>
-                                <input type="text" placeholder="Name" value={member.name} onChange={e => handleMemberChange(index, 'name', e.target.value)} className="flex-grow block w-full px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                                <input type="text" placeholder="Name" value={member.name} onChange={e => handleMemberChange(index, 'name', e.target.value)} required className="flex-grow block w-full px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500" />
                                 <input type="tel" placeholder="Phone (Optional)" value={member.phone} onChange={e => handleMemberChange(index, 'phone', e.target.value)} className="flex-grow block w-full px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500" />
                                 <button type="button" onClick={() => removeMember(index)} className="p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Remove member">
                                     <TrashIcon className="w-5 h-5"/>
@@ -837,6 +921,32 @@ const GroupForm: React.FC<GroupFormProps> = ({ isOpen, onClose, onAddGroup, onUp
                     <button type="button" onClick={addMember} className="mt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center">
                         <PlusIcon className="w-4 h-4 mr-1"/> Add Member
                     </button>
+                </div>
+                <div>
+                    <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">Payout Order</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Drag and drop members to set the payout order.</p>
+                    <ul className="space-y-2 max-h-40 overflow-y-auto pr-2 border dark:border-gray-600 rounded-lg p-2">
+                        {payoutOrder.map((memberId, index) => {
+                            const member = members.find(m => m.id === memberId);
+                            if (!member) return null;
+                            return (
+                                <li
+                                    key={memberId}
+                                    draggable
+                                    onDragStart={() => handleDragStart(index)}
+                                    onDragEnter={() => handleDragEnter(index)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    className={`flex items-center p-2 rounded-md cursor-grab bg-white dark:bg-gray-700 shadow-sm transition-opacity ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+                                >
+                                    <GripVerticalIcon className="w-5 h-5 mr-3 text-gray-400 dark:text-gray-500"/>
+                                    <span className="font-mono text-sm text-gray-400 dark:text-gray-500 w-6 text-center">{index + 1}.</span>
+                                    <span className="ml-2 font-medium">{member.name || `Member ${index + 1}`}</span>
+                                </li>
+                            );
+                        })}
+                         {payoutOrder.length === 0 && <p className="text-center text-sm text-gray-500 py-4">Add members to set payout order.</p>}
+                    </ul>
                 </div>
                 <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
                     <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500">Cancel</button>
