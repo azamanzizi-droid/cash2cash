@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { Group, Member, Round } from './types';
 import { getFinancialTip } from './services/geminiService';
-import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon, BookOpenIcon } from './components/icons';
+import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon, BookOpenIcon, DownloadIcon } from './components/icons';
 
 
 // --- NOTIFICATION SYSTEM ---
@@ -178,6 +178,7 @@ const KutuApp: React.FC = () => {
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
     const [deletePassword, setDeletePassword] = useState('');
     const { showToast } = useNotification();
+    const [isClearDataModalOpen, setClearDataModalOpen] = useState(false);
     const [theme, setTheme] = useState(() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem('theme') || 'system';
@@ -392,6 +393,18 @@ const KutuApp: React.FC = () => {
         setGroupModalOpen(true);
     };
 
+    const handleRequestClearData = () => {
+        setClearDataModalOpen(true);
+    };
+
+    const handleConfirmClearData = () => {
+        setGroups([]);
+        setSelectedGroup(null);
+        setView('list');
+        showToast('All group data has been cleared.', 'success');
+        setClearDataModalOpen(false);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <header className="bg-white dark:bg-gray-800 shadow-md">
@@ -448,6 +461,7 @@ const KutuApp: React.FC = () => {
                         onBack={() => setView('list')}
                         currentTheme={theme}
                         onThemeChange={setTheme}
+                        onRequestClearAllData={handleRequestClearData}
                     />
                 )}
                 {view === 'manual' && (
@@ -491,6 +505,27 @@ const KutuApp: React.FC = () => {
                             className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                         >
                             Delete
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            <Modal isOpen={isClearDataModalOpen} onClose={() => setClearDataModalOpen(false)} title="Confirm Clear All Data">
+                <div className="text-center">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                        Are you absolutely sure? This will permanently delete all your groups and data. This action cannot be undone.
+                    </p>
+                    <div className="flex justify-center gap-4 mt-6">
+                        <button
+                            onClick={() => setClearDataModalOpen(false)}
+                            className="px-6 py-2 bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmClearData}
+                            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                        >
+                            Yes, Clear Everything
                         </button>
                     </div>
                 </div>
@@ -602,6 +637,7 @@ interface GroupDetailProps {
 
 const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onDeleteGroup, onStartNextRound, onMarkPayoutComplete, onMarkAsPaid }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const { showToast } = useNotification();
     const currentRound = group.rounds.find(r => r.roundNumber === group.currentRound);
     
     if (!currentRound) {
@@ -663,6 +699,55 @@ const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onDeleteGroup,
         }
     };
 
+    const exportToCSV = () => {
+        const escapeCsvField = (field: any): string => {
+            const stringField = String(field ?? '');
+            if (/[",\n]/.test(stringField)) {
+                return `"${stringField.replace(/"/g, '""')}"`;
+            }
+            return stringField;
+        };
+
+        const headers = ['Round Number', 'Payout Recipient', 'Payout Completed', 'Member Name', 'Member Phone', 'Payment Status'];
+        const csvRows = [headers.join(',')];
+
+        group.rounds.forEach(round => {
+            const payoutMember = group.members.find(m => m.id === group.payoutOrder[round.roundNumber - 1]);
+            
+            round.payments.forEach(payment => {
+                const member = group.members.find(m => m.id === payment.memberId);
+                if (member) {
+                    const rowData = [
+                        round.roundNumber,
+                        payoutMember ? payoutMember.name : 'N/A',
+                        round.payoutCompleted ? 'Yes' : 'No',
+                        member.name,
+                        member.phone,
+                        payment.status
+                    ];
+                    csvRows.push(rowData.map(escapeCsvField).join(','));
+                }
+            });
+        });
+
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            const sanitizedGroupName = group.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            link.setAttribute('download', `${sanitizedGroupName}_report.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Export successful!', 'success');
+        } else {
+            showToast('Export failed. Your browser does not support this feature.', 'error');
+        }
+    };
+
 
     return (
         <div>
@@ -681,6 +766,10 @@ const GroupDetail: React.FC<GroupDetailProps> = ({ group, onBack, onDeleteGroup,
                             <WhatsAppIcon className="w-5 h-5 mr-2"/>
                             Remind
                         </a>
+                        <button onClick={exportToCSV} className="flex items-center bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                            <DownloadIcon className="w-5 h-5 mr-2"/>
+                            Export
+                        </button>
                         <button onClick={printReport} className="flex items-center bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
                             <PrinterIcon className="w-5 h-5 mr-2"/>
                             Print
@@ -998,9 +1087,10 @@ interface SettingsPageProps {
     onBack: () => void;
     currentTheme: string;
     onThemeChange: (theme: string) => void;
+    onRequestClearAllData: () => void;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, currentTheme, onThemeChange }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, currentTheme, onThemeChange, onRequestClearAllData }) => {
     return (
         <div>
             <button onClick={onBack} className="flex items-center text-indigo-600 dark:text-indigo-400 font-semibold mb-6 hover:underline">
@@ -1029,6 +1119,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, currentTheme, onThe
                             ))}
                         </div>
                     </div>
+
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                        <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Danger Zone</h3>
+                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                            This action is irreversible. Please be certain before proceeding.
+                        </p>
+                        <button
+                            onClick={onRequestClearAllData}
+                            className="w-full justify-center flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/80 dark:focus:ring-offset-gray-800"
+                        >
+                            <TrashIcon className="w-5 h-5 mr-2" />
+                            Clear All Group Data
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -1104,5 +1209,5 @@ const UserManualPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 };
 
-
+// FIX: Removed extraneous text appended to the export statement which was causing syntax errors.
 export default App;
