@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { Group, Member, Round } from './types';
 import { getFinancialTip } from './services/geminiService';
-import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon } from './components/icons';
+import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon, BookOpenIcon } from './components/icons';
 
 
 // --- NOTIFICATION SYSTEM ---
@@ -156,6 +156,8 @@ const App: React.FC = () => (
     </NotificationProvider>
 );
 
+const DELETE_PASSWORD = 'kutuprodelete';
+
 const KutuApp: React.FC = () => {
     const [groups, setGroups] = useState<Group[]>(() => {
         try {
@@ -167,13 +169,14 @@ const KutuApp: React.FC = () => {
         }
     });
     const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-    const [view, setView] = useState<'list' | 'detail' | 'settings'>('list');
+    const [view, setView] = useState<'list' | 'detail' | 'settings' | 'manual'>('list');
     const [isGroupModalOpen, setGroupModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<Group | null>(null);
     const [financialTip, setFinancialTip] = useState<string>('');
     const [tipLoading, setTipLoading] = useState<boolean>(true);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+    const [deletePassword, setDeletePassword] = useState('');
     const { showToast } = useNotification();
     const [theme, setTheme] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -247,17 +250,27 @@ const KutuApp: React.FC = () => {
         showToast('Group added successfully!', 'success');
     };
 
-    const handleUpdateGroup = (updatedGroup: Group) => {
-        setGroups(groups.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-        if (selectedGroup?.id === updatedGroup.id) {
-            setSelectedGroup(updatedGroup);
+    const handleUpdateGroup = (group: Group) => {
+        setGroups(groups.map(g => g.id === group.id ? group : g));
+        if (selectedGroup?.id === group.id) {
+            setSelectedGroup(group);
         }
         showToast('Group updated successfully!', 'success');
     };
 
     const requestDeleteGroup = (groupId: string) => {
         setGroupToDelete(groupId);
+        setDeletePassword('');
         setDeleteModalOpen(true);
+    };
+
+    const handleAttemptDelete = () => {
+        if (deletePassword === DELETE_PASSWORD) {
+            handleConfirmDelete();
+        } else {
+            showToast('Incorrect password. Deletion failed.', 'error');
+            setDeletePassword('');
+        }
     };
 
     const handleConfirmDelete = () => {
@@ -396,6 +409,13 @@ const KutuApp: React.FC = () => {
                             New Group
                         </button>
                          <button
+                            onClick={() => setView('manual')}
+                            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="User Manual"
+                        >
+                            <BookOpenIcon className="w-6 h-6" />
+                        </button>
+                         <button
                             onClick={() => setView('settings')}
                             className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             aria-label="Settings"
@@ -430,6 +450,9 @@ const KutuApp: React.FC = () => {
                         onThemeChange={setTheme}
                     />
                 )}
+                {view === 'manual' && (
+                    <UserManualPage onBack={() => setView('list')} />
+                )}
             </main>
              <GroupForm
                 isOpen={isGroupModalOpen}
@@ -440,10 +463,23 @@ const KutuApp: React.FC = () => {
             />
             <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirm Deletion">
                 <div className="text-center">
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
                         Are you sure you want to delete this group? This action cannot be undone.
                     </p>
-                    <div className="flex justify-center gap-4">
+                    <div className="my-4 text-left">
+                        <label htmlFor="delete-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Enter password to confirm:</label>
+                        <input 
+                            id="delete-password"
+                            type="password"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAttemptDelete()}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            autoFocus
+                        />
+                         <p className="text-xs text-gray-400 mt-1">Password: <strong>kutuprodelete</strong></p>
+                    </div>
+                    <div className="flex justify-center gap-4 mt-6">
                         <button
                             onClick={() => setDeleteModalOpen(false)}
                             className="px-6 py-2 bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
@@ -451,7 +487,7 @@ const KutuApp: React.FC = () => {
                             Cancel
                         </button>
                         <button
-                            onClick={handleConfirmDelete}
+                            onClick={handleAttemptDelete}
                             className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                         >
                             Delete
@@ -998,5 +1034,75 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, currentTheme, onThe
         </div>
     );
 };
+
+// --- USER MANUAL PAGE ---
+const UserManualPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    return (
+        <div>
+            <button onClick={onBack} className="flex items-center text-indigo-600 dark:text-indigo-400 font-semibold mb-6 hover:underline">
+                <ArrowLeftIcon className="w-5 h-5 mr-2" />
+                Back to All Groups
+            </button>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mt-6 max-w-4xl mx-auto prose dark:prose-invert lg:prose-lg">
+                <h1 className="font-title text-4xl !mb-2 text-orange-500 dark:text-orange-400">Manual Pengguna KutuPro</h1>
+                <p className="!mt-0 lead !text-gray-600 dark:!text-gray-300">Selamat datang ke KutuPro Loan Manager! Aplikasi ini direka untuk memudahkan pengurusan kumpulan simpanan komuniti anda.</p>
+                
+                <h2>1. Memulakan</h2>
+                <p>Apabila anda membuka aplikasi, anda akan melihat papan pemuka utama dengan satu kumpulan contoh. Ini membantu anda membiasakan diri dengan ciri-cirinya.</p>
+                <p><strong>Penting:</strong> Semua data anda disimpan secara automatik di dalam pelayar web anda. Anda tidak akan kehilangan maklumat anda walaupun anda menutup tab.</p>
+
+                <h2>2. Papan Pemuka Utama ("My Groups")</h2>
+                <p>Skrin utama adalah pusat arahan anda dan menunjukkan semua kumpulan kutu yang anda uruskan.</p>
+                <ul>
+                    <li><strong>Tip Kewangan Harian:</strong> Di bahagian atas, dapatkan tip kewangan ringkas. Klik butang muat semula untuk mendapatkan tip baru.</li>
+                    <li><strong>Butang "New Group":</strong> Klik untuk membuat kumpulan kutu yang baru.</li>
+                    <li><strong>Senarai Kumpulan:</strong> Setiap kumpulan yang anda cipta akan dipaparkan sebagai kad ringkasan.</li>
+                </ul>
+
+                <h2>3. Mencipta & Mengedit Kumpulan Anda</h2>
+                <p>Apabila anda mengklik "New Group" atau butang "Edit", satu borang modal akan muncul.</p>
+                <ul>
+                    <li><strong>Group Name:</strong> Masukkan nama yang mudah diingati.</li>
+                    <li><strong>Contribution Amount (RM):</strong> Tetapkan jumlah sumbangan untuk setiap pusingan.</li>
+                    <li><strong>Members:</strong> Masukkan nama dan nombor telefon (pilihan) untuk setiap ahli.</li>
+                    <li><strong>Payout Order:</strong> Seret dan lepas (Drag and drop) nama ahli untuk menyusun semula giliran pembayaran.</li>
+                </ul>
+                <p>Setelah selesai, klik <strong>"Create Group"</strong> atau <strong>"Save Changes"</strong>.</p>
+
+                <h2>4. Menguruskan Kumpulan Anda</h2>
+                <p>Ini adalah pusat kawalan untuk operasi harian kumpulan anda. Anda boleh menghantar peringatan WhatsApp, mencetak laporan, atau memadam kumpulan.</p>
+
+                <h3>Aliran Kerja Utama Pusingan Kutu</h3>
+                <ol>
+                    <li><strong>Tandakan Bayaran (Mark Payments):</strong> Apabila ahli membuat bayaran, klik butang <strong>"Mark Paid"</strong>.</li>
+                    <li><strong>Lengkapkan Payout:</strong> Apabila semua ahli telah membayar, klik butang <strong>"Mark Payout as Complete"</strong>.</li>
+                    <li><strong>Mulakan Pusingan Seterusnya:</strong> Klik <strong>"Start Next Round"</strong> untuk memajukan kumpulan ke pusingan seterusnya.</li>
+                </ol>
+                <p>Ulangi proses ini sehingga semua pusingan selesai.</p>
+
+                <h2>5. Tetapan (Settings)</h2>
+                <p>Klik ikon gear untuk mengakses halaman Tetapan. Di sini, anda boleh menukar tema penampilan aplikasi (Light, Dark, atau System).</p>
+
+                <h2>6. Soalan Lazim (FAQ)</h2>
+                <dl className="space-y-4">
+                    <div>
+                        <dt><strong>S: Apa yang berlaku jika saya menutup pelayar web saya?</strong></dt>
+                        <dd className="pl-5">J: Jangan risau! Semua data anda disimpan dengan selamat dalam pelayar anda.</dd>
+                    </div>
+                    <div>
+                        <dt><strong>S: Bolehkah saya menukar giliran pembayaran di pertengahan jalan?</strong></dt>
+                        <dd className="pl-5">J: Ya. Dari papan pemuka, klik ikon "Edit", susun semula "Payout Order", dan klik "Save Changes".</dd>
+                    </div>
+                    <div>
+                        <dt><strong>S: Apa yang berlaku apabila semua pusingan selesai?</strong></dt>
+                        <dd className="pl-5">J: Status kumpulan akan bertukar kepada "Completed" dan ia akan kekal sebagai rekod sejarah.</dd>
+                    </div>
+                </dl>
+
+            </div>
+        </div>
+    );
+};
+
 
 export default App;
