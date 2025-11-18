@@ -19,6 +19,39 @@
     .font-manager {
       font-family: 'Aldrich', sans-serif;
     }
+    @media print {
+      .no-print {
+          display: none !important;
+      }
+      body {
+          background-color: white !important;
+      }
+      .bg-white, .dark\:bg-gray-800, .dark\:bg-gray-900, .bg-gray-50, .dark\:bg-gray-700, .bg-gray-100, .dark\:bg-gray-700\/50, .bg-green-50, .dark\:bg-green-900\/30, .bg-indigo-50, .dark\:bg-indigo-900\/30, .bg-green-100, .dark\:bg-green-900\/50, .bg-indigo-100, .dark\:bg-indigo-900\/50 {
+          background-color: white !important;
+          background: white !important;
+      }
+      .text-gray-800, .dark\:text-white, .dark\:text-gray-200, .dark\:text-gray-300, .dark\:text-gray-400, .text-gray-500, .dark\:text-gray-500, .font-manager, .text-indigo-500, .text-indigo-600 {
+          color: black !important;
+      }
+      .text-green-600, .dark\:text-green-400, .text-green-700, .dark\:text-green-300, .text-green-800, .dark\:text-green-200 {
+          color: darkgreen !important;
+      }
+      .text-indigo-700, .dark\:text-indigo-300, .text-indigo-800, .dark\:text-indigo-200 {
+          color: darkblue !important;
+      }
+      .text-yellow-500 {
+          color: darkorange !important;
+      }
+      .shadow-md {
+          box-shadow: none !important;
+      }
+      .border, .border-gray-200, .dark\:border-gray-700 {
+          border: 1px solid #ccc !important;
+      }
+      .ring-2, .ring-indigo-500 {
+          border: 2px solid darkblue !important;
+      }
+    }
   </style>
 <script type="importmap">
 {
