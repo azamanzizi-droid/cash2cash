@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
-import { Group, Member, Round, Payment } from './types';
+import { Group, Member, Round, Payment, Frequency } from './types';
 import { getFinancialTip } from './services/geminiService';
 import { translations, Language } from './translations';
 import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon, BookOpenIcon, DownloadIcon, LayoutGridIcon, GlobeIcon } from './components/icons';
@@ -181,6 +181,8 @@ const createInitialData = (): Group[] => {
             id: 'grp1',
             name: 'Kutu Keluarga Bahagia',
             contributionAmount: 200,
+            payoutFrequency: 'Monthly',
+            paymentFrequency: 'Monthly',
             members,
             payoutOrder: ['2', '5', '1', '4', '3'],
             currentRound: 1,
@@ -369,16 +371,16 @@ const GroupListItem: React.FC<{
                         <p className="font-semibold text-gray-800 dark:text-white">RM {group.contributionAmount.toLocaleString()}</p>
                     </div>
                     <div>
-                        <p className="text-gray-500 dark:text-gray-400">{t('members')}</p>
-                        <p className="font-semibold text-gray-800 dark:text-white">{group.members.length}</p>
+                         <p className="text-gray-500 dark:text-gray-400">{t('round')}</p>
+                         <p className="font-semibold text-gray-800 dark:text-white">{group.currentRound} / {totalRounds}</p>
                     </div>
                     <div>
-                        <p className="text-gray-500 dark:text-gray-400">{t('round')}</p>
-                        <p className="font-semibold text-gray-800 dark:text-white">{group.currentRound} / {totalRounds}</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('payoutFrequency')}</p>
+                        <p className="font-semibold text-gray-800 dark:text-white">{t(group.payoutFrequency?.toLowerCase() || 'monthly')}</p>
                     </div>
                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">{t('totalPool')}</p>
-                        <p className="font-semibold text-gray-800 dark:text-white">RM {(group.contributionAmount * group.members.length).toLocaleString()}</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('paymentFrequency')}</p>
+                        <p className="font-semibold text-gray-800 dark:text-white">{t(group.paymentFrequency?.toLowerCase() || 'monthly')}</p>
                     </div>
                 </div>
             </div>
@@ -555,6 +557,8 @@ const GroupForm: React.FC<{
     const { t } = useTranslation();
     const [name, setName] = useState('');
     const [contributionAmount, setContributionAmount] = useState<number>(100);
+    const [payoutFrequency, setPayoutFrequency] = useState<Frequency>('Monthly');
+    const [paymentFrequency, setPaymentFrequency] = useState<Frequency>('Monthly');
     const [members, setMembers] = useState<Member[]>([{ id: Date.now().toString(), name: '', phone: '' }]);
     const [payoutOrder, setPayoutOrder] = useState<string[]>([]);
 
@@ -562,6 +566,8 @@ const GroupForm: React.FC<{
         if (group) {
             setName(group.name);
             setContributionAmount(group.contributionAmount);
+            setPayoutFrequency(group.payoutFrequency || 'Monthly');
+            setPaymentFrequency(group.paymentFrequency || 'Monthly');
             setMembers(group.members);
             setPayoutOrder(group.payoutOrder);
         }
@@ -611,6 +617,8 @@ const GroupForm: React.FC<{
             id: group?.id,
             name,
             contributionAmount,
+            payoutFrequency,
+            paymentFrequency,
             members: finalMembers,
             payoutOrder,
         });
@@ -643,6 +651,35 @@ const GroupForm: React.FC<{
                     required
                     min="1"
                 />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="payoutFrequency" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('payoutFrequency')}</label>
+                    <select
+                        id="payoutFrequency"
+                        value={payoutFrequency}
+                        onChange={(e) => setPayoutFrequency(e.target.value as Frequency)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                        <option value="Monthly">{t('monthly')}</option>
+                        <option value="Weekly">{t('weekly')}</option>
+                        <option value="Daily">{t('daily')}</option>
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="paymentFrequency" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('paymentFrequency')}</label>
+                    <select
+                        id="paymentFrequency"
+                        value={paymentFrequency}
+                        onChange={(e) => setPaymentFrequency(e.target.value as Frequency)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                        <option value="Monthly">{t('monthly')}</option>
+                        <option value="Weekly">{t('weekly')}</option>
+                        <option value="Daily">{t('daily')}</option>
+                    </select>
+                </div>
             </div>
 
             <div>
@@ -737,7 +774,13 @@ const GroupDetail: React.FC<{
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{group.name}</h2>
-                    <p className="text-gray-500 dark:text-gray-400">{t('managingRound')} {group.currentRound} {t('of')} {group.members.length}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-500 dark:text-gray-400 text-sm mt-1">
+                        <p>{t('managingRound')} {group.currentRound} {t('of')} {group.members.length}</p>
+                        <span className="hidden sm:inline">•</span>
+                        <p>{t('payoutFrequency')}: {t(group.payoutFrequency?.toLowerCase() || 'monthly')}</p>
+                         <span className="hidden sm:inline">•</span>
+                        <p>{t('paymentFrequency')}: {t(group.paymentFrequency?.toLowerCase() || 'monthly')}</p>
+                    </div>
                 </div>
                  <div className="flex flex-wrap items-center gap-2">
                     <button onClick={handleRemindAll} className="flex items-center px-3 py-2 text-sm font-semibold text-white bg-green-500 rounded-md hover:bg-green-600">
@@ -1020,6 +1063,8 @@ const KutuApp: React.FC = () => {
                 // Data Normalization/Validation
                 const normalizedGroups = parsedGroups.map(group => ({
                     ...group,
+                    payoutFrequency: group.payoutFrequency || 'Monthly',
+                    paymentFrequency: group.paymentFrequency || 'Monthly',
                     rounds: group.rounds && group.rounds.length > 0 ? group.rounds : [{
                         roundNumber: 1,
                         payoutMemberId: null,
@@ -1206,6 +1251,8 @@ const KutuApp: React.FC = () => {
             // Group Info
             csvContent += "Group Name," + group.name + "\n";
             csvContent += "Contribution Amount," + group.contributionAmount + "\n";
+            csvContent += "Payout Frequency," + (group.payoutFrequency || 'Monthly') + "\n";
+            csvContent += "Payment Frequency," + (group.paymentFrequency || 'Monthly') + "\n";
             csvContent += "Status," + group.status + "\n\n";
 
             // Members

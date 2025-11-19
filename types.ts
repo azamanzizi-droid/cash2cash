@@ -1,3 +1,4 @@
+
 export interface Member {
   id: string;
   name: string;
@@ -16,10 +17,14 @@ export interface Round {
   payoutCompleted: boolean;
 }
 
+export type Frequency = 'Daily' | 'Weekly' | 'Monthly';
+
 export interface Group {
   id: string;
   name: string;
   contributionAmount: number;
+  payoutFrequency: Frequency;
+  paymentFrequency: Frequency;
   members: Member[];
   payoutOrder: string[];
   currentRound: number;

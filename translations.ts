@@ -1,4 +1,5 @@
 
+
 export type Language = 'en' | 'bm';
 
 export const translations: Record<Language, Record<string, string>> = {
@@ -31,6 +32,11 @@ export const translations: Record<Language, Record<string, string>> = {
     viewDetails: 'View Details',
     editGroup: 'Edit Group',
     deleteGroup: 'Delete Group',
+    payoutFrequency: 'Payout Frequency',
+    paymentFrequency: 'Payment Frequency',
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
 
     // Group Detail
     backToAllGroups: 'Back to All Groups',
@@ -168,6 +174,11 @@ export const translations: Record<Language, Record<string, string>> = {
     viewDetails: 'Lihat Butiran',
     editGroup: 'Edit Kumpulan',
     deleteGroup: 'Padam Kumpulan',
+    payoutFrequency: 'Kekerapan Payout',
+    paymentFrequency: 'Kekerapan Bayaran',
+    daily: 'Harian',
+    weekly: 'Mingguan',
+    monthly: 'Bulanan',
 
     // Group Detail
     backToAllGroups: 'Kembali ke Semua Kumpulan',
