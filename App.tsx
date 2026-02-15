@@ -195,44 +195,69 @@ const createInitialData = (): Group[] => {
 type View = 'dashboard' | 'groupList' | 'groupDetail' | 'settings' | 'userManual';
 
 
-const Header: React.FC<{
-    currentView: View;
-    onNavigate: (view: View, fromView: View) => void;
-    language: Language;
-    onLanguageChange: (lang: Language) => void;
-}> = ({ currentView, onNavigate, language, onLanguageChange }) => {
-    const { t } = useTranslation();
+const Header: React.FC = () => {
     return (
-        <header className="bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center sticky top-0 z-30 no-print">
+        <header className="bg-white dark:bg-gray-800 shadow-sm p-4 flex justify-center items-center sticky top-0 z-30 no-print border-b dark:border-gray-700">
             <div className="flex items-center space-x-2">
                 <span className="text-2xl text-indigo-600 dark:text-indigo-400">💵</span>
                 <h1 className="text-xl sm:text-2xl font-bold font-title text-gray-800 dark:text-white tracking-wider">
                     KutuPro<span className="font-manager text-indigo-500">Manager</span>
                 </h1>
             </div>
-            <nav className="flex items-center space-x-1 sm:space-x-2">
-                <button onClick={() => onNavigate('dashboard', currentView)} className={`flex items-center space-x-2 px-2 sm:px-3 py-2 rounded-md text-sm font-medium ${currentView === 'dashboard' ? 'bg-indigo-100 text-indigo-700 dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
-                    <LayoutGridIcon className="w-5 h-5" />
-                    <span className="hidden md:inline">{t('dashboard')}</span>
-                </button>
-                <button onClick={() => onNavigate('groupList', currentView)} className={`flex items-center space-x-2 px-2 sm:px-3 py-2 rounded-md text-sm font-medium ${currentView === 'groupList' ? 'bg-indigo-100 text-indigo-700 dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
-                    <UsersIcon className="w-5 h-5" />
-                    <span className="hidden md:inline">{t('myGroups')}</span>
-                </button>
-                <button onClick={() => onNavigate('userManual', currentView)} className={`flex items-center space-x-2 px-2 sm:px-3 py-2 rounded-md text-sm font-medium ${currentView === 'userManual' ? 'bg-indigo-100 text-indigo-700 dark:bg-gray-700 dark:text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
-                    <BookOpenIcon className="w-5 h-5" />
-                    <span className="hidden md:inline">{t('userManual')}</span>
-                </button>
-                 <div className="hidden sm:flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
-                    <GlobeIcon className="w-5 h-5 text-gray-500 dark:text-gray-400 mx-1" />
-                    <button onClick={() => onLanguageChange('en')} className={`px-3 py-1 text-sm font-semibold rounded-full ${language === 'en' ? 'bg-white text-indigo-600 shadow' : 'text-gray-600 dark:text-gray-300'}`}>EN</button>
-                    <button onClick={() => onLanguageChange('bm')} className={`px-3 py-1 text-sm font-semibold rounded-full ${language === 'bm' ? 'bg-white text-indigo-600 shadow' : 'text-gray-600 dark:text-gray-300'}`}>BM</button>
-                </div>
-                <button onClick={() => onNavigate('settings', currentView)} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
-                    <SettingsIcon className="w-6 h-6" />
-                </button>
-            </nav>
         </header>
+    );
+};
+
+const BottomNav: React.FC<{
+    currentView: View;
+    onNavigate: (view: View, fromView: View) => void;
+    language: Language;
+    onLanguageChange: (lang: Language) => void;
+}> = ({ currentView, onNavigate, language, onLanguageChange }) => {
+    const { t } = useTranslation();
+    
+    const navItemClasses = (view: View) => `
+        flex flex-col items-center justify-center flex-1 py-2 px-1 transition-colors duration-200
+        ${currentView === view 
+            ? 'text-indigo-600 dark:text-indigo-400' 
+            : 'text-gray-500 dark:text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-300'}
+    `;
+
+    return (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 z-40 flex items-center justify-around px-2 pb-safe no-print">
+            <button onClick={() => onNavigate('dashboard', currentView)} className={navItemClasses('dashboard')}>
+                <LayoutGridIcon className="w-6 h-6" />
+                <span className="text-[10px] mt-1 font-medium">{t('dashboard')}</span>
+            </button>
+            
+            <button onClick={() => onNavigate('groupList', currentView)} className={navItemClasses('groupList')}>
+                <UsersIcon className="w-6 h-6" />
+                <span className="text-[10px] mt-1 font-medium">{t('myGroups')}</span>
+            </button>
+
+            <button onClick={() => onNavigate('userManual', currentView)} className={navItemClasses('userManual')}>
+                <BookOpenIcon className="w-6 h-6" />
+                <span className="text-[10px] mt-1 font-medium">{t('userManual')}</span>
+            </button>
+
+            <button 
+                onClick={() => onLanguageChange(language === 'en' ? 'bm' : 'en')} 
+                className="flex flex-col items-center justify-center flex-1 py-2 px-1 text-gray-500 dark:text-gray-400"
+            >
+                <div className="relative">
+                    <GlobeIcon className="w-6 h-6" />
+                    <span className="absolute -top-1 -right-2 bg-indigo-600 text-white text-[8px] px-1 rounded-full font-bold">
+                        {language.toUpperCase()}
+                    </span>
+                </div>
+                <span className="text-[10px] mt-1 font-medium">{language === 'en' ? 'Malay' : 'English'}</span>
+            </button>
+
+            <button onClick={() => onNavigate('settings', currentView)} className={navItemClasses('settings')}>
+                <SettingsIcon className="w-6 h-6" />
+                <span className="text-[10px] mt-1 font-medium">{t('settings')}</span>
+            </button>
+        </nav>
     );
 };
 
@@ -1105,6 +1130,7 @@ const KutuApp: React.FC = () => {
             setPreviousView(fromView);
         }
         setView(newView);
+        window.scrollTo(0, 0);
     };
 
     const handleBack = () => {
@@ -1322,8 +1348,8 @@ const KutuApp: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-            <Header currentView={view} onNavigate={handleNavigate} language={language} onLanguageChange={setLanguage} />
-            <main className="p-4 sm:p-6 max-w-7xl mx-auto">
+            <Header />
+            <main className="p-4 sm:p-6 pb-24 max-w-7xl mx-auto">
                  {(view === 'groupDetail' || view === 'settings' || view === 'userManual') && (
                     <button onClick={handleBack} className="flex items-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mb-6 no-print">
                         <ArrowLeftIcon className="w-4 h-4 mr-2" />
@@ -1333,6 +1359,13 @@ const KutuApp: React.FC = () => {
                 {renderContent()}
             </main>
             
+            <BottomNav 
+                currentView={view} 
+                onNavigate={handleNavigate} 
+                language={language} 
+                onLanguageChange={setLanguage} 
+            />
+
             <Modal isOpen={isFormOpen} onClose={handleCloseForm} title={editingGroup ? t('editExistingGroup') : t('createNewGroup')}>
                 <GroupForm group={editingGroup} onSave={handleSaveGroup} onClose={handleCloseForm} />
             </Modal>
