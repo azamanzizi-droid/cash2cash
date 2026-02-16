@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo, createContext, useCon
 import { Group, Member, Round, Payment, Frequency } from './types';
 import { getFinancialTip } from './services/geminiService';
 import { translations, Language } from './translations';
-import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon, BookOpenIcon, DownloadIcon, LayoutGridIcon, GlobeIcon } from './components/icons';
+import { UsersIcon, CalendarIcon, DollarSignIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon, ArrowLeftIcon, RefreshCwIcon, LightbulbIcon, SettingsIcon, WhatsAppIcon, TrashIcon, PlusIcon, PrinterIcon, GripVerticalIcon, SearchIcon, BookOpenIcon, DownloadIcon, LayoutGridIcon, GlobeIcon, LogOutIcon } from './components/icons';
 
 
 // --- i18n & TRANSLATION SYSTEM ---
@@ -90,7 +90,7 @@ const Toast: React.FC<ToastProps> = ({ message, type, visible, onClose }) => {
 
     return (
         <div
-            className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-transform duration-300 ease-in-out ${visible ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0'} flex items-center p-4 min-w-[300px] max-w-md text-white rounded-lg shadow-lg ${typeStyles[type].bg}`}
+            className={`fixed top-10 left-1/2 -translate-x-1/2 z-50 transition-transform duration-300 ease-in-out ${visible ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0'} flex items-center p-4 min-w-[300px] max-w-md text-white rounded-lg shadow-lg ${typeStyles[type].bg} mt-[var(--safe-area-inset-top)]`}
             role="alert"
         >
             {typeStyles[type].icon}
@@ -143,9 +143,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" aria-labelledby="modal-title" role="dialog" aria-modal="true" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" aria-labelledby="modal-title" role="dialog" aria-modal="true" onClick={onClose}>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center p-4 border-b dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+                <div className="flex justify-between items-center p-4 border-b dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 pt-safe">
                     <h2 id="modal-title" className="text-xl font-bold text-gray-800 dark:text-white">{title}</h2>
                     <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <XCircleIcon className="w-6 h-6" />
@@ -196,14 +196,34 @@ type View = 'dashboard' | 'groupList' | 'groupDetail' | 'settings' | 'userManual
 
 
 const Header: React.FC = () => {
+    const { t } = useTranslation();
+    
+    const handleCloseApp = () => {
+        if (window.confirm(t('confirmCloseApp'))) {
+            window.close();
+            // Fallback if browser blocks window.close
+            setTimeout(() => {
+                alert(t('bm') === 'bm' ? 'Sila tutup tab ini secara manual.' : 'Please close this tab manually.');
+            }, 500);
+        }
+    };
+
     return (
-        <header className="bg-white dark:bg-gray-800 shadow-sm p-4 flex justify-center items-center sticky top-0 z-30 no-print border-b dark:border-gray-700">
+        <header className="bg-white dark:bg-gray-800 shadow-sm px-4 pt-safe pb-4 flex justify-between items-center sticky top-0 z-30 no-print border-b dark:border-gray-700">
+            <div className="w-10"></div>
             <div className="flex items-center space-x-2">
                 <span className="text-2xl text-indigo-600 dark:text-indigo-400">💵</span>
                 <h1 className="text-xl sm:text-2xl font-bold font-title text-gray-800 dark:text-white tracking-wider">
                     KutuPro<span className="font-manager text-indigo-500">Manager</span>
                 </h1>
             </div>
+            <button 
+                onClick={handleCloseApp}
+                className="p-2 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                title={t('closeApp')}
+            >
+                <LogOutIcon className="w-6 h-6" />
+            </button>
         </header>
     );
 };
@@ -224,7 +244,7 @@ const BottomNav: React.FC<{
     `;
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 z-40 flex items-center justify-around px-2 pb-safe no-print">
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 z-40 flex items-center justify-around px-2 pb-safe no-print">
             <button onClick={() => onNavigate('dashboard', currentView)} className={navItemClasses('dashboard')}>
                 <LayoutGridIcon className="w-6 h-6" />
                 <span className="text-[10px] mt-1 font-medium">{t('dashboard')}</span>
@@ -1347,9 +1367,9 @@ const KutuApp: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+        <div className="min-h-screen-safe bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
             <Header />
-            <main className="p-4 sm:p-6 pb-24 max-w-7xl mx-auto">
+            <main className="p-4 sm:p-6 pb-28 max-w-7xl mx-auto">
                  {(view === 'groupDetail' || view === 'settings' || view === 'userManual') && (
                     <button onClick={handleBack} className="flex items-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mb-6 no-print">
                         <ArrowLeftIcon className="w-4 h-4 mr-2" />

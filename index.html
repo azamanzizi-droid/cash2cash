@@ -3,22 +3,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>KutuPro Loan Manager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Aldrich&family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --safe-area-inset-top: env(safe-area-inset-top, 0px);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
     body {
       font-family: 'Inter', sans-serif;
+      /* Ensure the body doesn't bounce or hide system bars */
+      overscroll-behavior-y: none;
     }
+    
     .font-title {
       font-family: 'Bebas Neue', sans-serif;
     }
     .font-manager {
       font-family: 'Aldrich', sans-serif;
     }
+
+    /* Custom classes for safe areas since standard tailwind doesn't have them built-in */
+    .pt-safe {
+      padding-top: calc(1rem + var(--safe-area-inset-top));
+    }
+    .pb-safe {
+      padding-bottom: calc(0.5rem + var(--safe-area-inset-bottom));
+    }
+    .min-h-screen-safe {
+      min-height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+    }
+
     @media print {
       .no-print {
           display: none !important;

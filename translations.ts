@@ -10,6 +10,7 @@ export const translations: Record<Language, Record<string, string>> = {
     newGroup: 'New Group',
     userManual: 'User Manual',
     settings: 'Settings',
+    closeApp: 'Close App',
 
     // Dashboard
     totalGroups: 'Total Groups',
@@ -144,6 +145,7 @@ export const translations: Record<Language, Record<string, string>> = {
     toastDataCleared: 'All group data has been cleared.',
     toastExportSuccessful: 'Export successful!',
     toastExportFailed: 'Export failed. Your browser does not support this feature.',
+    confirmCloseApp: 'Are you sure you want to exit KutuPro Manager?',
   },
   bm: {
     // Header
@@ -152,6 +154,7 @@ export const translations: Record<Language, Record<string, string>> = {
     newGroup: 'Kumpulan Baru',
     userManual: 'Manual Pengguna',
     settings: 'Tetapan',
+    closeApp: 'Tutup Aplikasi',
 
     // Dashboard
     totalGroups: 'Jumlah Kumpulan',
@@ -241,7 +244,7 @@ export const translations: Record<Language, Record<string, string>> = {
     manualTitle: 'Manual Pengguna KutuPro',
     manualWelcome: 'Selamat datang ke KutuPro Loan Manager! Aplikasi ini direka untuk memudahkan pengurusan kumpulan simpanan komuniti anda.',
     manualGettingStarted: 'Memulakan',
-    manualGettingStartedP1: 'Apabila anda membuka aplikasi, anda akan melihat papan pemuka utama dengan satu kumpulan contoh. Ini membantu anda membiasakan diri dengan ciri-cirinya.',
+    manualGettingStartedP1: 'Apabila anda membuka aplikasi, anda akan melihat papan pemuka utama dengan satu kumpulan contoh. Ini membantu anda membiasakan diri dengan ciri-citinya.',
     manualGettingStartedP2: 'Penting: Semua data anda disimpan secara automatik di dalam pelayar web anda. Anda tidak akan kehilangan maklumat anda walaupun anda menutup tab.',
     manualDashboard: 'Papan Pemuka Utama ("Kumpulan Saya")',
     manualDashboardP1: 'Skrin utama adalah pusat arahan anda dan menunjukkan semua kumpulan kutu yang anda uruskan.',
@@ -286,5 +289,6 @@ export const translations: Record<Language, Record<string, string>> = {
     toastDataCleared: 'Semua data kumpulan telah dipadam.',
     toastExportSuccessful: 'Eksport berjaya!',
     toastExportFailed: 'Eksport gagal. Pelayar anda tidak menyokong ciri ini.',
+    confirmCloseApp: 'Adakah anda pasti ingin keluar dari KutuPro Manager?',
   },
 };
